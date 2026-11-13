@@ -83,6 +83,7 @@ def build():
         "backend.api.sentinel",
         "backend.api.sandbox",
         "backend.api.remediation",
+        "backend.api.settings",
         "backend.scanners",
         "backend.scanners.security",
         "backend.scanners.privacy",

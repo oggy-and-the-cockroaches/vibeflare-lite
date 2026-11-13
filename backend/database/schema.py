@@ -19,6 +19,14 @@ def init_db() -> None:
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
 
+    # Settings table for API keys and configurations
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    """)
+
     # Projects table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS projects (

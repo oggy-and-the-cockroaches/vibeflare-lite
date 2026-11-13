@@ -113,6 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupRuntimeScan();
     setupSentinel();
     setupReports();
+    setupSettings();
 
     // Check status
     checkGemmaStatus();
@@ -1139,21 +1140,196 @@ async function loadReportPreview() {
 
 // Gemma AI & Sentinel Badges
 async function checkGemmaStatus() {
+    try {
+        const res = await fetch(`${API_BASE}/settings`);
+        if (res.ok) {
+            const data = await res.json();
+            updateGemmaBadge(data);
+        }
+    } catch (e) {
+        const badgeText = $('gemma-status-text');
+        if (badgeText) badgeText.textContent = 'Gemma: Offline Fallback';
+    }
+}
+
+function updateGemmaBadge(settings) {
     const badgeText = $('gemma-status-text');
     const badge = $('gemma-status-badge');
     if (!badgeText || !badge) return;
-
-    try {
-        const response = await fetch(`${API_BASE}/health`);
-        if (response.ok) {
-            badgeText.textContent = 'Gemma AI Security';
-            badge.classList.add('connected');
-        } else {
-            badgeText.textContent = 'Gemma Offline';
-        }
-    } catch (e) {
-        badgeText.textContent = 'Gemma Offline';
+    badge.style.cursor = 'pointer';
+    badge.title = 'Click to open AI model settings';
+    if (!badge.dataset.listenerSet) {
+        badge.addEventListener('click', () => showSection('settings'));
+        badge.dataset.listenerSet = 'true';
     }
+    if (settings && settings.has_api_key) {
+        badgeText.textContent = `Gemma: ${settings.model_name || 'gemma-4-31b-it'}`;
+        badge.classList.add('connected');
+    } else {
+        badgeText.textContent = 'Gemma: Offline Fallback';
+        badge.classList.remove('connected');
+    }
+}
+
+async function setupSettings() {
+    const saveBtn = $('save-settings-btn');
+    const testBtn = $('test-settings-btn');
+    const clearBtn = $('clear-settings-btn');
+    const toggleBtn = $('toggle-key-visibility-btn');
+    const keyInput = $('settings-api-key');
+    const modelSelect = $('settings-model');
+    const endpointInput = $('settings-endpoint');
+    const statusBox = $('settings-status-box');
+
+    if (toggleBtn && keyInput) {
+        toggleBtn.addEventListener('click', () => {
+            if (keyInput.type === 'password') {
+                keyInput.type = 'text';
+                toggleBtn.textContent = 'Hide';
+            } else {
+                keyInput.type = 'password';
+                toggleBtn.textContent = 'Show';
+            }
+        });
+    }
+
+    async function loadSettingsData() {
+        try {
+            const res = await fetch(`${API_BASE}/settings`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (modelSelect && data.model_name) modelSelect.value = data.model_name;
+            if (endpointInput && data.endpoint) endpointInput.value = data.endpoint;
+            if (keyInput) {
+                if (data.masked_key) {
+                    keyInput.placeholder = `Key Configured (${data.masked_key})`;
+                } else {
+                    keyInput.placeholder = 'AIzaSy... (Paste your Gemini API key)';
+                }
+            }
+            updateGemmaBadge(data);
+        } catch (e) {}
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            try {
+                const payload = {
+                    api_key: keyInput ? keyInput.value.trim() : '',
+                    model_name: modelSelect ? modelSelect.value : 'gemma-4-31b-it',
+                    endpoint: endpointInput ? endpointInput.value.trim() : ''
+                };
+                const res = await fetch(`${API_BASE}/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    statusBox.style.background = 'rgba(166,227,161,0.15)';
+                    statusBox.style.border = '1px solid #a6e3a1';
+                    statusBox.style.color = '#a6e3a1';
+                    statusBox.innerHTML = `<strong>Settings Saved!</strong> Model: <code>${escapeHtml(data.model_name)}</code>. ${data.has_api_key ? 'Live Gemini/Gemma AI key activated.' : 'Running in deterministic offline fallback mode.'}`;
+                }
+                if (keyInput && payload.api_key) {
+                    keyInput.value = '';
+                }
+                await loadSettingsData();
+            } catch (e) {
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    statusBox.style.background = 'rgba(243,139,168,0.15)';
+                    statusBox.style.border = '1px solid #f38ba8';
+                    statusBox.style.color = '#f38ba8';
+                    statusBox.innerHTML = `<strong>Error saving settings:</strong> ${escapeHtml(e.message)}`;
+                }
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 Save Settings';
+            }
+        });
+    }
+
+    if (testBtn) {
+        testBtn.addEventListener('click', async () => {
+            testBtn.disabled = true;
+            testBtn.textContent = 'Testing connection...';
+            if (statusBox) {
+                statusBox.style.display = 'block';
+                statusBox.style.background = 'rgba(137,180,250,0.15)';
+                statusBox.style.border = '1px solid #89b4fa';
+                statusBox.style.color = '#89b4fa';
+                statusBox.innerHTML = 'Testing connection to Gemini API (gemma-4-31b-it)...';
+            }
+            try {
+                const payload = {
+                    api_key: keyInput ? keyInput.value.trim() : '',
+                    model_name: modelSelect ? modelSelect.value : 'gemma-4-31b-it'
+                };
+                const res = await fetch(`${API_BASE}/settings/test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (statusBox) {
+                    if (data.success) {
+                        statusBox.style.background = 'rgba(166,227,161,0.15)';
+                        statusBox.style.border = '1px solid #a6e3a1';
+                        statusBox.style.color = '#a6e3a1';
+                        statusBox.innerHTML = `<strong>Connection Successful!</strong> ${escapeHtml(data.message)}`;
+                    } else {
+                        statusBox.style.background = 'rgba(243,139,168,0.15)';
+                        statusBox.style.border = '1px solid #f38ba8';
+                        statusBox.style.color = '#f38ba8';
+                        statusBox.innerHTML = `<strong>Connection Check:</strong> ${escapeHtml(data.error)}`;
+                    }
+                }
+            } catch (e) {
+                if (statusBox) {
+                    statusBox.style.background = 'rgba(243,139,168,0.15)';
+                    statusBox.style.border = '1px solid #f38ba8';
+                    statusBox.style.color = '#f38ba8';
+                    statusBox.innerHTML = `<strong>Connection Test Error:</strong> ${escapeHtml(e.message)}`;
+                }
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = '⚡ Test Connection';
+            }
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', async () => {
+            if (!confirm('Clear your custom Gemini API key and switch back to offline fallback?')) return;
+            try {
+                await fetch(`${API_BASE}/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: '', model_name: 'gemma-4-31b-it' })
+                });
+                if (keyInput) {
+                    keyInput.value = '';
+                    keyInput.placeholder = 'AIzaSy... (Paste your Gemini API key)';
+                }
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    statusBox.style.background = 'rgba(147,154,183,0.15)';
+                    statusBox.style.border = '1px solid #6c7086';
+                    statusBox.style.color = '#bac2de';
+                    statusBox.innerHTML = 'API key removed. Vibeflare Lite is now operating in 100% offline fallback mode.';
+                }
+                await loadSettingsData();
+            } catch (e) {
+                alert('Error resetting settings: ' + e.message);
+            }
+        });
+    }
+
+    await loadSettingsData();
 }
 
 async function checkSentinelStatus() {

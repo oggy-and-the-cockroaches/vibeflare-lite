@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from backend.database.schema import init_db
-from backend.api import projects, scans, reports, sandbox, fixes, sentinel, runtime, proxy, remediation
+from backend.api import projects, scans, reports, sandbox, fixes, sentinel, runtime, proxy, remediation, settings
 
 # Initialize database synchronously before app creation
 init_db()
@@ -49,11 +49,18 @@ app.include_router(fixes.router)
 app.include_router(sentinel.router)
 app.include_router(runtime.router)
 app.include_router(proxy.router)
+app.include_router(settings.router)
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Ensure sample demo project is ready on startup."""
+    """Ensure sample demo project and user settings are ready on startup."""
+    try:
+        from backend.api.settings import load_settings_on_startup
+        load_settings_on_startup()
+    except Exception as e:
+        print(f"Notice: Loading settings: {e}")
+
     try:
         from backend.services.demo_seeder import ensure_demo_project
         await ensure_demo_project()

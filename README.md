@@ -71,9 +71,16 @@ No need to zip or upload code to try the product. Vibeflare Lite automatically s
 ### 3. 🤖 Verified AI Remediation (100% Offline Capable)
 * Every finding includes root-cause analysis, impact estimation, and actionable developer guidance.
 * Generates clean **unified patch diffs** for vulnerable code.
-* Works completely offline using a deterministic synthesis engine. If you want to connect Google Gemma/Gemini remote inference, simply set your `GEMINI_API_KEY`.
+* Works completely offline using a deterministic synthesis engine.
 
-### 4. 📊 Downloadable Executive Security Reports
+### 4. ⚙️ Custom Gemini API Key & Gemma 4 Configuration
+* **Configurable in UI**: Open the **Settings** tab (or click the Gemma badge in the header) to enter your own Google Gemini API key.
+* **Default Model**: Configured out of the box with **`gemma-4-31b-it`** (also supporting `gemma-2-27b-it`, `gemini-2.5-flash`, and custom local Ollama/vLLM endpoints).
+* **Live Connection Test**: Click **Test Connection** directly in the Settings view to verify your API key and latency in real time.
+* **Local Persistence**: Your API key is stored securely in your local workstation SQLite database and is never transmitted to external services.
+* **Zero-Friction Fallback**: Leaving the API key blank keeps Vibeflare Lite running seamlessly in 100% offline deterministic fallback mode.
+
+### 5. 📊 Downloadable Executive Security Reports
 Generate and export full-fidelity security audits in JSON and HTML formats for stakeholders or compliance documentation.
 
 ---

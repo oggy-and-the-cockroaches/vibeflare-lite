@@ -83,6 +83,35 @@ def test_explain_finding_offline_fallback():
     assert "SQL Injection" in explanation["summary"]
 
 
+def test_settings_api_endpoints(client):
+    """Verify user can view, save, and test their Gemini API key and model settings."""
+    # 1. GET settings
+    res = client.get("/api/settings")
+    assert res.status_code == 200
+    data = res.json()
+    assert "model_name" in data
+    assert "gemma-4-31b-it" in data["supported_models"]
+
+    # 2. POST save custom API key and model
+    save_res = client.post("/api/settings", json={
+        "api_key": "AIzaSyTestMockKeyForGemma4",
+        "model_name": "gemma-4-31b-it"
+    })
+    assert save_res.status_code == 200
+    assert save_res.json()["has_api_key"] is True
+    assert save_res.json()["model_name"] == "gemma-4-31b-it"
+
+    # 3. Verify settings were persisted and masked in GET
+    res2 = client.get("/api/settings")
+    assert res2.json()["has_api_key"] is True
+    assert "AIzaSy" in res2.json()["masked_key"]
+
+    # 4. Clear key to revert to offline fallback
+    clear_res = client.post("/api/settings", json={"api_key": "", "model_name": "gemma-4-31b-it"})
+    assert clear_res.status_code == 200
+    assert clear_res.json()["has_api_key"] is False
+
+
 @pytest.mark.asyncio
 async def test_mock_shield_port_creation_and_blocking():
     """Test that mock proxy binds an OS port and intercepts attacks with 403."""
