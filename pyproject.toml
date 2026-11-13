@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shipcheck"
+version = "2.0.0"
+description = "AI-powered pre-shipment security code auditor, Gemma verified remediation engine, and Sentinel RASP."
+readme = "README.md"
+authors = [{ name = "Shipcheck Community" }]
+license = { text = "MIT" }
+keywords = ["security", "ast", "waf", "rasp", "gemma", "remediation", "vulnerability-scanner"]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+    "pydantic>=2.6.0",
+    "aiofiles>=23.2.0",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27.0",
+    "requests>=2.31.0",
+    "bcrypt>=4.1.0",
+    "packaging>=24.0",
+    "python-dotenv>=1.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.1.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[project.scripts]
+shipcheck = "backend.main:main"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests", "sentinel_rasp/tests"]

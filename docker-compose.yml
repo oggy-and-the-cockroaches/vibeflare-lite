@@ -1,0 +1,16 @@
+services:
+  shipcheck:
+    build: .
+    container_name: shipcheck-platform
+    ports:
+      - "8000:8000"
+    environment:
+      - SHIPCHECK_DB_PATH=/app/data/shipcheck.db
+      - SHIPCHECK_PROJECTS_DIR=/app/data/projects
+      - SHIPCHECK_LLM_PROVIDER=mock
+    volumes:
+      - shipcheck-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  shipcheck-data:
